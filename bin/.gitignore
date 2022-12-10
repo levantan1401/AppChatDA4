@@ -1,7 +1,2 @@
-/client/
-/db/
-/dbController/
-/server/
 /videoClient/
-/voiceClient/
-/voiceServer/
+/server/

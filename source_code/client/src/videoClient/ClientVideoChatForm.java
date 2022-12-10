@@ -27,13 +27,31 @@ package videoClient;
 
 import Utils.Utils;
 import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamDiscoveryEvent;
+import com.github.sarxos.webcam.WebcamDiscoveryListener;
+import com.github.sarxos.webcam.WebcamEvent;
+import com.github.sarxos.webcam.WebcamListener;
 import com.github.sarxos.webcam.WebcamPanel;
+import com.github.sarxos.webcam.WebcamPicker;
 import com.github.sarxos.webcam.WebcamResolution;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.lang.Thread.UncaughtExceptionHandler;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.TargetDataLine;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+
 import voiceClient.MicThread;
 import voiceClient.SoundPacket;
 
@@ -43,7 +61,7 @@ import voiceClient.SoundPacket;
  */
 
 
-public class ClientVideoChatForm extends javax.swing.JFrame {
+public class ClientVideoChatForm extends javax.swing.JFrame implements Runnable, WebcamListener, WindowListener, UncaughtExceptionHandler, ItemListener, WebcamDiscoveryListener {
     static int milliseconds = 0;
     static int seconds = 0;
     static int minutes = 0;
@@ -52,6 +70,10 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
     static boolean state = true;
     private MicTester micTester;   
     //this class is used to test the microphone. it manages the volume meter
+    private Webcam webcam = null;
+    private WebcamPanel panel = null;
+    private WebcamPicker picker = null;
+    
     private class MicTester extends Thread{
         private TargetDataLine mic = null;
         public MicTester() {
@@ -59,7 +81,6 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
         }
         @Override
         public void run() {
-                
                 try {
                     AudioFormat af = SoundPacket.defaultFormat;
                     DataLine.Info info = new DataLine.Info(TargetDataLine.class, null);
@@ -71,6 +92,7 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
                             "Microphone not detected.\nPlease check Microphone", 
                             "Error",JOptionPane.ERROR_MESSAGE);
                 }
+               
                 for (;;) {
                     Utils.sleep(10);
                     if(mic.available() > 0){
@@ -84,6 +106,7 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
                         micLev.setValue((int)tot);
                     }
                 }
+             
             }
         private void close(){
             if(mic!=null) mic.close();
@@ -102,16 +125,50 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
     }
     
     private void showUserWebCamStartingTime(){
-        Webcam webcam = Webcam.getDefault();
-        webcam.setViewSize(WebcamResolution.VGA.getSize());
+        webcam = Webcam.getDefault();
+        webcam.addDiscoveryListener(this);
+        
 
-        WebcamPanel panel = new WebcamPanel(webcam);
+		picker = new WebcamPicker();
+		picker.addItemListener(this);
+
+		webcam = picker.getSelectedWebcam();
+		if (webcam == null) {
+			System.out.println("No webcams found...");
+			System.exit(1);
+		}
+
+		
+        webcam.setViewSize(WebcamResolution.VGA.getSize());
+        // demo 
+        webcam.addWebcamListener(ClientVideoChatForm.this);
+		
+        panel = new WebcamPanel(webcam, true);
         panel.setFPSDisplayed(true);
         panel.setDisplayDebugInfo(true);
         panel.setImageSizeDisplayed(true);
         panel.setMirrored(true);
-        this.add(panel);
+        pack();
+
+        userWebCam.setLayout(new BorderLayout());
+        userWebCam.add(panel);
+        userWebCam.revalidate();
+        userWebCam.repaint();
+        Thread t = new Thread() {
+
+			@Override
+			public void run() {
+				panel.start();
+			}
+		};
+		t.setName("example-starter");
+		t.setDaemon(true);
+		t.setUncaughtExceptionHandler(this);
+		t.start();
     }
+//    public static void main() {
+//    	SwingUtilities.invokeLater(new ClientVideoChatForm());
+//	}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -160,6 +217,7 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
         friendWebCam.setBackground(new java.awt.Color(255, 255, 255));
         friendWebCam.setPreferredSize(new java.awt.Dimension(640, 480));
 
+        
         javax.swing.GroupLayout friendWebCamLayout = new javax.swing.GroupLayout(friendWebCam);
         friendWebCam.setLayout(friendWebCamLayout);
         friendWebCamLayout.setHorizontalGroup(
@@ -170,6 +228,7 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
             friendWebCamLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 480, Short.MAX_VALUE)
         );
+        
 
         userWebCam.setBackground(new java.awt.Color(255, 255, 255));
         userWebCam.setPreferredSize(new java.awt.Dimension(160, 120));
@@ -367,6 +426,8 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         // TODO add your handling code here:
         micTester.close();
+        webcam.close();
+        picker.removeActionListener(null);
         setVisible(false);
     }//GEN-LAST:event_jButton3ActionPerformed
 
@@ -429,4 +490,99 @@ public class ClientVideoChatForm extends javax.swing.JFrame {
     private javax.swing.JLabel second;
     private javax.swing.JPanel userWebCam;
     // End of variables declaration//GEN-END:variables
+	@Override
+	public void webcamClosed(WebcamEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void webcamDisposed(WebcamEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void webcamImageObtained(WebcamEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void webcamOpen(WebcamEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void webcamFound(WebcamDiscoveryEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void webcamGone(WebcamDiscoveryEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void uncaughtException(Thread t, Throwable e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowOpened(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowClosing(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowClosed(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowIconified(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeiconified(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowActivated(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeactivated(WindowEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
+	}
 }

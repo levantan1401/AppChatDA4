@@ -39,10 +39,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-/**
- *
- * @author Le Nhut Nam
- */
 
 public class LoginForm extends javax.swing.JFrame {
 

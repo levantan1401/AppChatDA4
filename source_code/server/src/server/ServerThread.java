@@ -44,7 +44,7 @@ public class ServerThread implements Runnable {
         serverMainForm.appendMessage("[Server]: Starting server in port " + port);
         try {
             this.serverMainForm = serverMainForm;
-            server = new ServerSocket(port, this.backlog, InetAddress.getByName("192.168.3.111"));
+            server = new ServerSocket(port, this.backlog, InetAddress.getByName("127.0.0.1"));
             serverMainForm.appendMessage("[Server]: Host:" 
                     + InetAddress.getLocalHost()
                     + ",IP:" + server.getInetAddress()
@@ -78,7 +78,7 @@ public class ServerThread implements Runnable {
         serverMainForm.appendMessage("[Server]: Starting server in port " + port);
         try {
             this.serverMainForm = serverMainForm;
-            server = new ServerSocket(port, backlog, InetAddress.getByName("192.168.3.111"));
+            server = new ServerSocket(port, backlog, InetAddress.getByName("127.0.0.1"));
             serverMainForm.appendMessage("[Server]: IP:" 
                     + server.getInetAddress().toString() 
                     + ",Port:" + port +",Backlog:" 
